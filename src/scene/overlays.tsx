@@ -3,7 +3,8 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { GEO_LABELS, HISTORIC_TRACKS } from '../data/destinations'
 import { greatCirclePoints, latLonToVector3 } from '../lib/geo'
-import { Html, Line } from '@react-three/drei'
+import { Line } from '@react-three/drei'
+import { HudLabel } from './HudLabel'
 
 const RADIUS = 1.62
 
@@ -97,16 +98,9 @@ export function GeoLabels() {
       {GEO_LABELS.map((label) => {
         const p = latLonToVector3(label.lat, label.lon, RADIUS * 1.035)
         return (
-          <Html
-            key={label.name}
-            position={p}
-            center
-            distanceFactor={7.5}
-            occlude
-            style={{ pointerEvents: 'none' }}
-          >
-            <div className="geo-label">{label.name}</div>
-          </Html>
+          <HudLabel key={label.name} position={p} className="geo-label">
+            {label.name}
+          </HudLabel>
         )
       })}
     </group>
@@ -263,8 +257,13 @@ export function RouteTube({
   )
 }
 
-export function DustField() {
+export function DustField({ live = false }: { live?: boolean }) {
   const ref = useRef<THREE.Points>(null)
+  const storm = useRef<THREE.Points>(null)
+  const mat = useRef<THREE.PointsMaterial>(null)
+  const stormMat = useRef<THREE.PointsMaterial>(null)
+  const liveAmt = useRef(0)
+
   const geo = useMemo(() => {
     const count = 1400
     const positions = new Float32Array(count * 3)
@@ -281,21 +280,65 @@ export function DustField() {
     return g
   }, [])
 
-  useFrame(({ clock }) => {
-    if (ref.current) ref.current.rotation.y = clock.elapsedTime * 0.012
+  const stormGeo = useMemo(() => {
+    const count = 900
+    const positions = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      const lat = (Math.random() - 0.35) * 0.9
+      const lon = Math.random() * Math.PI * 2
+      const r = RADIUS * (1.045 + Math.random() * 0.08)
+      positions[i * 3] = r * Math.cos(lat) * Math.cos(lon)
+      positions[i * 3 + 1] = r * Math.sin(lat)
+      positions[i * 3 + 2] = r * Math.cos(lat) * Math.sin(lon)
+    }
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    return g
+  }, [])
+
+  useFrame(({ clock }, dt) => {
+    liveAmt.current = THREE.MathUtils.lerp(liveAmt.current, live ? 1 : 0, 1 - Math.exp(-dt * 1.6))
+    const t = clock.elapsedTime
+    if (ref.current) ref.current.rotation.y = t * (0.012 + liveAmt.current * 0.11)
+    if (storm.current) {
+      storm.current.rotation.y = t * (0.04 + liveAmt.current * 0.28)
+      storm.current.rotation.z = Math.sin(t * 0.35) * 0.12 * liveAmt.current
+    }
+    if (mat.current) {
+      mat.current.opacity = 0.18 + liveAmt.current * 0.28
+      mat.current.size = 0.01 + liveAmt.current * 0.012
+    }
+    if (stormMat.current) {
+      stormMat.current.opacity = liveAmt.current * (0.22 + Math.sin(t * 2.1) * 0.08)
+      stormMat.current.size = 0.016 + liveAmt.current * 0.02
+    }
   })
 
   return (
-    <points ref={ref} geometry={geo}>
-      <pointsMaterial
-        color="#e8a070"
-        size={0.01}
-        transparent
-        opacity={0.22}
-        depthWrite={false}
-        sizeAttenuation
-      />
-    </points>
+    <group>
+      <points ref={ref} geometry={geo}>
+        <pointsMaterial
+          ref={mat}
+          color="#e8a070"
+          size={0.01}
+          transparent
+          opacity={0.22}
+          depthWrite={false}
+          sizeAttenuation
+        />
+      </points>
+      <points ref={storm} geometry={stormGeo}>
+        <pointsMaterial
+          ref={stormMat}
+          color="#ffb078"
+          size={0.016}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          sizeAttenuation
+        />
+      </points>
+    </group>
   )
 }
 

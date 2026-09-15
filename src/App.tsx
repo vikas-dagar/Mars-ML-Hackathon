@@ -18,8 +18,6 @@ const MISSION_DEFAULTS: Record<MissionType, { cargo: number; passengers: number 
 export default function App() {
   const [mission, setMission] = useState<MissionType>('supplies')
   const [destination, setDestination] = useState<Destination | null>(null)
-  const [cargoKg, setCargoKg] = useState(1250)
-  const [passengers, setPassengers] = useState(0)
   const [plotting, setPlotting] = useState(false)
   const [routeOn, setRouteOn] = useState(false)
   const [route, setRoute] = useState<RouteResult | null>(null)
@@ -33,16 +31,15 @@ export default function App() {
 
   const onMission = (m: MissionType) => {
     setMission(m)
-    setCargoKg(MISSION_DEFAULTS[m].cargo)
-    setPassengers(MISSION_DEFAULTS[m].passengers)
     if (routeOn) setRouteOn(false)
   }
 
   const onPlot = () => {
     if (!destination) return
+    const load = MISSION_DEFAULTS[mission]
     setPlotting(true)
     window.setTimeout(() => {
-      setRoute(plotSurfaceRoute(destination, mission, cargoKg, passengers))
+      setRoute(plotSurfaceRoute(destination, mission, load.cargo, load.passengers))
       setRouteOn(true)
       setPlotting(false)
     }, 900)
@@ -54,7 +51,7 @@ export default function App() {
   )
 
   return (
-    <div className={`app mission-${mission}`}>
+    <div className={`app mission-${mission} ${routeOn ? 'routed' : ''}`}>
       <div className="stage">
         <Suspense fallback={null}>
           <Canvas
@@ -74,6 +71,7 @@ export default function App() {
               onHoverSurface={(lat, lon) => setHover({ lat, lon })}
             />
             <OrbitControls
+              makeDefault
               enablePan={false}
               enableDamping
               dampingFactor={0.05}
@@ -113,10 +111,6 @@ export default function App() {
           setDestination(d)
           setRouteOn(false)
         }}
-        cargoKg={cargoKg}
-        passengers={passengers}
-        onCargo={setCargoKg}
-        onPassengers={setPassengers}
         onPlot={onPlot}
         plotting={plotting}
         routeOn={routeOn}
@@ -133,7 +127,7 @@ export default function App() {
         </div>
         <div className="chip">
           <span>Storm cell</span>
-          <strong>None in 420 km</strong>
+          <strong>{routeOn ? 'Tracking corridor' : 'None in 420 km'}</strong>
         </div>
         <div className="chip">
           <span>Mode</span>
