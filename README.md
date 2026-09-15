@@ -6,7 +6,7 @@
 **Team:** Maps for Mars
 **Hackathon:** Mars ML — PhysicsX · GirlsWhoML · Cursor
 **Pitch:** [mapformars.vercel.app](https://mapformars.vercel.app)
-
+**Simulation** https://hannahohnz.github.io/maps-for-mars/
 ---
 
 ## The Problem
