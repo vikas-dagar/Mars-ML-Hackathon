@@ -1,1 +1,1 @@
-# Mihika-Mars-ML-Hackathon
+# Mars-ML-Hackathon
