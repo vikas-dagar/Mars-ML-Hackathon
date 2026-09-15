@@ -1,9 +1,11 @@
 import { useMemo, useRef } from 'react'
 import { useFrame, useLoader } from '@react-three/fiber'
-import { Stars, Html } from '@react-three/drei'
+import { Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { CURRENT_LOCATION, DESTINATIONS, type Destination } from '../data/destinations'
 import { latLonToVector3, vector3ToLatLon } from '../lib/geo'
+import { CameraRig } from './CameraRig'
+import { HudLabel } from './HudLabel'
 import {
   Beacon,
   Contours,
@@ -49,16 +51,20 @@ const solarVert = `
 
 const solarFrag = `
   uniform vec3 uSun;
+  uniform float uTime;
+  uniform float uLive;
   varying vec3 vN;
   void main() {
     float d = dot(normalize(vN), normalize(uSun));
-    float day = smoothstep(-0.08, 0.45, d);
+    float day = smoothstep(-0.08, 0.45, d)
+      * (0.85 + uLive * 0.25 * (0.5 + 0.5 * sin(uTime * 1.6)));
     vec3 night = vec3(0.05, 0.12, 0.28);
-    vec3 noon = vec3(1.0, 0.72, 0.28);
+    vec3 noon = mix(vec3(1.0, 0.72, 0.28), vec3(1.0, 0.92, 0.45), uLive);
     vec3 col = mix(night, noon, day);
-    float band = abs(fract((d * 0.5 + 0.5) * 7.0) - 0.5);
+    float band = abs(fract((d * 0.5 + 0.5) * (7.0 + uLive * 5.0) - uTime * (0.08 + uLive * 0.55)) - 0.5);
     float lines = smoothstep(0.18, 0.05, band);
-    gl_FragColor = vec4(col, 0.12 + lines * 0.16 * day);
+    float alpha = 0.1 + uLive * 0.14 + lines * (0.14 + uLive * 0.28) * day;
+    gl_FragColor = vec4(col, alpha);
   }
 `
 
@@ -108,19 +114,25 @@ function Atmosphere() {
   )
 }
 
-function SolarOverlay() {
+function SolarOverlay({ live = false }: { live?: boolean }) {
   const mat = useRef<THREE.ShaderMaterial>(null)
+  const liveAmt = useRef(0)
   const uniforms = useMemo(
     () => ({
       uSun: { value: new THREE.Vector3(0.7, 0.25, 0.55) },
+      uTime: { value: 0 },
+      uLive: { value: 0 },
     }),
     [],
   )
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock }, dt) => {
     if (!mat.current) return
-    const t = clock.elapsedTime * 0.04
+    liveAmt.current = THREE.MathUtils.lerp(liveAmt.current, live ? 1 : 0, 1 - Math.exp(-dt * 1.5))
+    const t = clock.elapsedTime * (0.04 + liveAmt.current * 0.22)
     mat.current.uniforms.uSun.value.set(Math.cos(t) * 0.8, 0.28, Math.sin(t) * 0.8)
+    mat.current.uniforms.uTime.value = clock.elapsedTime
+    mat.current.uniforms.uLive.value = liveAmt.current
   })
 
   return (
@@ -195,23 +207,20 @@ export function MarsScene({
       <directionalLight position={[-3.5, -1.2, -2]} intensity={0.28} color="#4a6a88" />
       <Stars radius={80} depth={40} count={5000} factor={2.6} saturation={0} fade speed={0.25} />
       <MarsBody onHover={onHoverSurface} />
-      <SolarOverlay />
+      <SolarOverlay live={routeOn} />
       <Atmosphere />
       <CoordinateGrid />
       <Contours />
       <HistoricTracks />
-      <DustField />
+      <DustField live={routeOn} />
       <GeoLabels />
       <Beacon lat={CURRENT_LOCATION.lat} lon={CURRENT_LOCATION.lon} active />
-      <Html
+      <HudLabel
         position={latLonToVector3(CURRENT_LOCATION.lat, CURRENT_LOCATION.lon, RADIUS * 1.08)}
-        center
-        distanceFactor={8}
-        occlude
-        style={{ pointerEvents: 'none' }}
+        className="geo-label"
       >
-        <div className="geo-label">Nav-01</div>
-      </Html>
+        Nav-01
+      </HudLabel>
       {DESTINATIONS.map((d) => (
         <Beacon
           key={d.id}
@@ -234,6 +243,7 @@ export function MarsScene({
           <meshBasicMaterial color={accent} />
         </mesh>
       )}
+      <CameraRig routeOn={routeOn} destination={destination} />
     </>
   )
 }

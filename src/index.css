@@ -196,6 +196,11 @@ input {
     0 24px 80px rgba(0, 0, 0, 0.45),
     inset 0 1px 0 rgba(255, 220, 190, 0.12);
   backdrop-filter: blur(22px) saturate(1.25);
+  transition:
+    width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.45s ease;
 }
 
 .panel-kicker {
@@ -225,12 +230,23 @@ input {
 }
 
 .glass-panel h2 {
-  margin: 10px 0 18px;
+  margin: 0 0 18px;
   font-family: var(--display);
   font-size: 28px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-weight: 600;
+}
+
+.glass-panel.minimized {
+  top: 118px;
+  transform: none;
+  width: min(320px, calc(100vw - 48px));
+  padding: 16px;
+  transition:
+    width 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    top 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    padding 0.45s ease;
 }
 
 .waypoint {

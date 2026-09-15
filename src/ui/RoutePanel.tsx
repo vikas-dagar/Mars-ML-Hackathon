@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { CURRENT_LOCATION, DESTINATIONS, type Destination } from '../data/destinations'
 import { formatLatLon } from '../lib/geo'
 import type { MissionType } from '../types'
@@ -54,10 +54,6 @@ type Props = {
   onMission: (m: MissionType) => void
   destination: Destination | null
   onDestination: (d: Destination | null, query: string) => void
-  cargoKg: number
-  passengers: number
-  onCargo: (n: number) => void
-  onPassengers: (n: number) => void
   onPlot: () => void
   plotting: boolean
   routeOn: boolean
@@ -68,23 +64,12 @@ export function RoutePanel({
   onMission,
   destination,
   onDestination,
-  cargoKg,
-  passengers,
-  onCargo,
-  onPassengers,
   onPlot,
   plotting,
   routeOn,
 }: Props) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
-  const [revealed, setRevealed] = useState(true)
-
-  useEffect(() => {
-    setRevealed(false)
-    const t = window.setTimeout(() => setRevealed(true), 180)
-    return () => window.clearTimeout(t)
-  }, [mission])
 
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -98,15 +83,11 @@ export function RoutePanel({
   }, [query])
 
   const cta =
-    mission === 'emergency' ? 'Plot evacuation' : routeOn ? 'Recalculate route' : 'Plot route'
+    mission === 'emergency' ? 'Calculate evacuation' : routeOn ? 'Recalculate route' : 'Calculate route'
 
   return (
-    <aside className="glass-panel">
-      <div className="panel-kicker">
-        <span className="live-dot" />
-        Nav solution · Isidis sector
-      </div>
-      <h2>Where are you going?</h2>
+    <aside className={`glass-panel ${routeOn ? 'minimized' : ''}`}>
+      {!routeOn && <h2>Where are you going?</h2>}
 
       <div className="waypoint from">
         <span className="way-label">From</span>
@@ -164,78 +145,51 @@ export function RoutePanel({
         )}
       </div>
 
-      <div className="dest-chips">
-        {DESTINATIONS.map((d) => (
-          <button
-            key={d.id}
-            type="button"
-            className={destination?.id === d.id ? 'on' : ''}
-            onClick={() => {
-              onDestination(d, d.name)
-              setQuery(d.name)
-              setOpen(false)
-            }}
-          >
-            {d.name}
-          </button>
-        ))}
-      </div>
-
-      <p className="section-label">Mission</p>
-      <div className="missions">
-        {MISSIONS.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={`mission ${mission === m.id ? 'active' : ''} ${m.id}`}
-            onClick={() => onMission(m.id)}
-          >
-            <Icon kind={m.icon} />
-            <strong>{m.title}</strong>
-            <span>{m.blurb}</span>
-          </button>
-        ))}
-      </div>
-
-      <div className={`mission-meta ${revealed ? 'in' : ''}`}>
-        <div className="meta-cell">
-          <span>Cargo</span>
-          <div className="stepper">
-            <button type="button" onClick={() => onCargo(Math.max(0, cargoKg - 50))}>
-              −
-            </button>
-            <strong>{cargoKg.toLocaleString()} kg</strong>
-            <button type="button" onClick={() => onCargo(Math.min(4000, cargoKg + 50))}>
-              +
-            </button>
+      {!routeOn && (
+        <>
+          <div className="dest-chips">
+            {DESTINATIONS.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                className={destination?.id === d.id ? 'on' : ''}
+                onClick={() => {
+                  onDestination(d, d.name)
+                  setQuery(d.name)
+                  setOpen(false)
+                }}
+              >
+                {d.name}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className="meta-cell">
-          <span>Passengers</span>
-          <div className="stepper">
-            <button type="button" onClick={() => onPassengers(Math.max(0, passengers - 1))}>
-              −
-            </button>
-            <strong>{passengers}</strong>
-            <button type="button" onClick={() => onPassengers(Math.min(6, passengers + 1))}>
-              +
-            </button>
-          </div>
-        </div>
-        <div className="meta-cell">
-          <span>Departure</span>
-          <strong className="depart">SOL 184 · 13:30</strong>
-        </div>
-      </div>
 
-      <button
-        type="button"
-        className={`cta ${mission}`}
-        onClick={onPlot}
-        disabled={!destination || plotting}
-      >
-        {plotting ? 'Solving terrain graph…' : `${cta} →`}
-      </button>
+          <p className="section-label">Mission</p>
+          <div className="missions">
+            {MISSIONS.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`mission ${mission === m.id ? 'active' : ''} ${m.id}`}
+                onClick={() => onMission(m.id)}
+              >
+                <Icon kind={m.icon} />
+                <strong>{m.title}</strong>
+                <span>{m.blurb}</span>
+              </button>
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className={`cta ${mission}`}
+            onClick={onPlot}
+            disabled={!destination || plotting}
+          >
+            {plotting ? 'Solving terrain graph…' : `${cta} →`}
+          </button>
+        </>
+      )}
     </aside>
   )
 }
