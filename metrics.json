@@ -1,0 +1,27 @@
+{
+  "n_train": 4900,
+  "n_val": 1050,
+  "n_test": 1050,
+  "models": {
+    "HistGradientBoostingRegressor": {
+      "validation": {
+        "MAE_Wh": 2.3036,
+        "R2": 0.9806
+      },
+      "test": {
+        "MAE_Wh": 2.0292,
+        "R2": 0.9845
+      }
+    },
+    "LinearRegression": {
+      "validation": {
+        "MAE_Wh": 10.7253,
+        "R2": 0.6932
+      },
+      "test": {
+        "MAE_Wh": 10.0762,
+        "R2": 0.7091
+      }
+    }
+  }
+}
