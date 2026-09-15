@@ -7,6 +7,9 @@
 **Hackathon:** Mars ML — PhysicsX · GirlsWhoML · Cursor
 **Pitch:** [mapformars.vercel.app](https://mapformars.vercel.app)
 **Simulation** https://hannahohnz.github.io/maps-for-mars/
+
+<img width="1032" height="773" alt="Screenshot 2026-09-15 at 9 04 21 PM" src="https://github.com/user-attachments/assets/08ec4433-e913-4afc-8403-284b1bec76aa" />
+
 ---
 
 ## The Problem
